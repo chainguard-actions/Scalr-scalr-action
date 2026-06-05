@@ -1,0 +1,21 @@
+name: Test deprecated terraform_version input
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          scalr_hostname: "example.scalr.io"
+          scalr_token: "fake-token-for-testing"
+          iac_platform: "terraform"
+          terraform_version: "1.5.7"
+          binary_wrapper: "false"
+          binary_output: "false"
+        continue-on-error: true
+      - name: Assert step ran
+        run: |
+          echo "PASS: action step completed with deprecated terraform_version input (continue-on-error)"

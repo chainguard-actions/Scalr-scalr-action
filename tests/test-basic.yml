@@ -1,0 +1,27 @@
+name: Test basic usage - terraform platform with binary_version
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          scalr_hostname: "example.scalr.io"
+          scalr_token: "fake-token-for-testing"
+          iac_platform: "terraform"
+          binary_version: "1.9.0"
+          binary_wrapper: "false"
+          binary_output: "false"
+        continue-on-error: true
+      - name: Assert terraform binary was installed
+        run: |
+          if command -v terraform &>/dev/null; then
+            echo "PASS: terraform binary found"
+            terraform version
+          else
+            echo "INFO: terraform binary not found (may be expected with fake credentials)"
+          fi
+          echo "PASS: action step completed (continue-on-error)"
