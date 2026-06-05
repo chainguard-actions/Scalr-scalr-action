@@ -1,0 +1,1 @@
+# Scalr-scalr-action
