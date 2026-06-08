@@ -1,0 +1,25 @@
+name: Test workspace name and environment name inputs
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          scalr_hostname: "example.scalr.io"
+          scalr_token: "fake-token-for-testing"
+          scalr_workspace_name: "my-workspace"
+          scalr_environment_name: "my-environment"
+          terraform_version: "1.9.0"
+          binary_wrapper: "false"
+          iac_platform: "terraform"
+      - name: Assert terraform is installed
+        run: |
+          echo "Checking terraform binary is available..."
+          which terraform || { echo "FAIL: terraform not found in PATH"; exit 1; }
+          TF_VERSION=$(terraform version 2>/dev/null | head -1 || echo "unknown")
+          echo "Terraform version output: $TF_VERSION"
+          echo "PASS: terraform binary is installed"
