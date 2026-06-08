@@ -1,0 +1,27 @@
+name: Test OpenTofu platform with binary_version
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          scalr_hostname: "example.scalr.io"
+          scalr_token: "fake-token-for-testing"
+          iac_platform: "tofu"
+          binary_version: "1.6.2"
+          binary_wrapper: "false"
+          binary_output: "false"
+        continue-on-error: true
+      - name: Assert tofu was installed
+        run: |
+          if command -v tofu &> /dev/null; then
+            echo "PASS: tofu binary found"
+            tofu version
+          else
+            echo "FAIL: tofu binary not found"
+            exit 1
+          fi
