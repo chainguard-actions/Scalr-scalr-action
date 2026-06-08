@@ -1,0 +1,63 @@
+name: "Scalr Github Action"
+description: "Installs Scalr and OpenTofu/Terraform CLI and configures them for Scalr use."
+author: "Scalr"
+inputs:
+  scalr_hostname:
+    description: "The hostname of a Scalr install. Example: username.scalr.io."
+    required: true
+  scalr_token:
+    description: "The API token to use."
+    required: true
+  scalr_workspace:
+    description: "The Scalr workspace ID you plan on working in. This is required if you want to autodetect the OpenTofu/Terraform version unless you provide scalr_workspace_name and scalr_environment_name instead."
+    required: false
+  scalr_workspace_name:
+    description: "The Scalr workspace name to resolve. Must be used together with scalr_environment_name."
+    required: false
+  scalr_environment_name:
+    description: "The Scalr environment name that contains scalr_workspace_name. Must be used together with scalr_workspace_name."
+    required: false
+  iac_platform:
+    description: "Specifies if you want to use the tofu or terraform platform."
+    default: "terraform"
+    required: false
+  binary_version:
+    description: "The concrete version of OpenTofu/Terraform CLI to install. Leave empty and provide scalr_workspace to autodetect from Scalr."
+    required: false
+  binary_wrapper:
+    description: "Whether or not to install a wrapper to wrap subsequent calls of the `tofu/terraform` binary and expose its STDOUT, STDERR, and exit code as outputs named `stdout`, `stderr`, and `exitcode` respectively. Defaults to `true`."
+    default: "true"
+    required: false
+  binary_output:
+    description: "Export OpenTofu/Terraform output variables as Action output variables."
+    default: "false"
+    required: false
+  terraform_version:
+    description: "Deprecated. Use `binary_version` instead."
+    required: false
+  terraform_wrapper:
+    description: "Deprecated. Use `binary_wrapper` instead."
+    default: "true"
+    required: false
+  terraform_output:
+    description: "Deprecated. Use `binary_output` instead."
+    default: "false"
+    required: false
+  pr_comment:
+    description: "Post terraform/tofu plan output as a PR comment. GITHUB_TOKEN is injected automatically. Only fires on pull_request and pull_request_target events."
+    default: "false"
+    required: false
+outputs:
+  stdout:
+    description: "STDOUT from the last tofu/terraform command (requires binary_wrapper: true)."
+  stderr:
+    description: "STDERR from the last tofu/terraform command (requires binary_wrapper: true)."
+  exitcode:
+    description: "Exit code from the last tofu/terraform command (requires binary_wrapper: true)."
+runs:
+  using: "node24"
+  main: "dist/terraform/index.js"
+  post: "dist/cleanup/index.js"
+branding:
+  icon: "terminal"
+  color: "red"
