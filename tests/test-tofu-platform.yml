@@ -1,4 +1,4 @@
-name: Test basic terraform usage
+name: Test OpenTofu platform usage
 on:
   workflow_dispatch:
 jobs:
@@ -11,18 +11,19 @@ jobs:
         with:
           scalr_hostname: "example.scalr.io"
           scalr_token: "fake-token-for-testing"
-          iac_platform: "terraform"
-          binary_version: "1.5.7"
+          scalr_workspace: "ws-fake123456"
+          iac_platform: "tofu"
+          binary_version: "1.6.2"
           binary_wrapper: "false"
           binary_output: "false"
         continue-on-error: true
-      - name: Assert terraform binary installed
+      - name: Assert tofu binary installed
         run: |
-          echo "Checking if terraform binary is available..."
-          if command -v terraform >/dev/null 2>&1; then
-            echo "PASS: terraform binary found"
-            terraform version
+          echo "Checking if tofu binary is available..."
+          if command -v tofu >/dev/null 2>&1; then
+            echo "PASS: tofu binary found"
+            tofu version
           else
-            echo "FAIL: terraform binary not found"
+            echo "FAIL: tofu binary not found"
             exit 1
           fi

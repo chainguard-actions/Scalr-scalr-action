@@ -1,4 +1,4 @@
-name: Test basic terraform usage
+name: Test deprecated terraform_version input
 on:
   workflow_dispatch:
 jobs:
@@ -11,14 +11,13 @@ jobs:
         with:
           scalr_hostname: "example.scalr.io"
           scalr_token: "fake-token-for-testing"
-          iac_platform: "terraform"
-          binary_version: "1.5.7"
+          terraform_version: "1.5.7"
           binary_wrapper: "false"
           binary_output: "false"
         continue-on-error: true
-      - name: Assert terraform binary installed
+      - name: Assert terraform binary installed via deprecated input
         run: |
-          echo "Checking if terraform binary is available..."
+          echo "Checking if terraform binary is available after using deprecated terraform_version input..."
           if command -v terraform >/dev/null 2>&1; then
             echo "PASS: terraform binary found"
             terraform version
