@@ -1,4 +1,4 @@
-name: Test basic usage with workspace ID and binary version
+name: Test deprecated terraform_version input
 on:
   workflow_dispatch:
 jobs:
@@ -11,13 +11,12 @@ jobs:
         with:
           scalr_hostname: example.scalr.io
           scalr_token: fake-token-for-testing
-          scalr_workspace: ws-fake123456789
-          binary_version: "1.9.0"
+          terraform_version: "1.5.0"
           iac_platform: terraform
           binary_wrapper: "false"
           binary_output: "false"
         continue-on-error: true
-      - name: Assert action ran (may fail due to invalid credentials but should not crash on missing inputs)
+      - name: Assert action ran with deprecated terraform_version input
         run: |
           echo "Action outcome: ${{ steps.action.outcome }}"
-          echo "PASS: action step executed without missing required input errors"
+          echo "PASS: action step executed with deprecated terraform_version input"

@@ -1,4 +1,4 @@
-name: Test basic usage with workspace ID and binary version
+name: Test usage with workspace name and environment name
 on:
   workflow_dispatch:
 jobs:
@@ -11,13 +11,13 @@ jobs:
         with:
           scalr_hostname: example.scalr.io
           scalr_token: fake-token-for-testing
-          scalr_workspace: ws-fake123456789
-          binary_version: "1.9.0"
+          scalr_workspace_name: my-workspace
+          scalr_environment_name: my-environment
           iac_platform: terraform
           binary_wrapper: "false"
           binary_output: "false"
         continue-on-error: true
-      - name: Assert action ran (may fail due to invalid credentials but should not crash on missing inputs)
+      - name: Assert action ran with workspace name and environment name inputs
         run: |
           echo "Action outcome: ${{ steps.action.outcome }}"
-          echo "PASS: action step executed without missing required input errors"
+          echo "PASS: action step executed with scalr_workspace_name and scalr_environment_name inputs"
