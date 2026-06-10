@@ -1,4 +1,4 @@
-name: Test deprecated terraform_version input
+name: Test workspace name and environment name inputs
 on:
   workflow_dispatch:
 jobs:
@@ -14,14 +14,16 @@ jobs:
         with:
           scalr_hostname: "example.scalr.io"
           scalr_token: "fake-token-for-testing"
-          terraform_version: "1.8.0"
+          scalr_workspace_name: "my-workspace"
+          scalr_environment_name: "my-environment"
+          binary_version: "1.9.0"
           iac_platform: "terraform"
           binary_wrapper: "false"
-      - name: Assert terraform is installed via deprecated input
+      - name: Assert terraform is installed
         run: |
           echo "Checking terraform binary is available..."
           if ! command -v terraform &>/dev/null; then
             echo "FAIL: terraform binary not found in PATH"
             exit 1
           fi
-          echo "PASS: terraform binary is installed using deprecated terraform_version input"
+          echo "PASS: terraform binary is installed with workspace_name and environment_name inputs"
