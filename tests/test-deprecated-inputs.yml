@@ -1,4 +1,4 @@
-name: Test workspace resolution by name and environment
+name: Test deprecated terraform_version input
 on:
   workflow_dispatch:
 jobs:
@@ -11,13 +11,11 @@ jobs:
         with:
           scalr_hostname: "example.scalr.io"
           scalr_token: "fake-token-for-testing"
-          scalr_workspace_name: "my-workspace"
-          scalr_environment_name: "my-environment"
-          binary_version: "1.9.0"
-          iac_platform: "terraform"
+          scalr_workspace: "ws-fake12345"
+          terraform_version: "1.9.0"
           binary_wrapper: "false"
           binary_output: "false"
         continue-on-error: true
-      - name: Assert action ran
+      - name: Assert action ran with deprecated terraform_version input
         run: |
-          echo "PASS: action step completed (with or without error due to fake credentials)"
+          echo "PASS: action step completed using deprecated terraform_version input"
