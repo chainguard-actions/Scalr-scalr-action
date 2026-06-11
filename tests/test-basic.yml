@@ -1,4 +1,4 @@
-name: Test deprecated terraform_version input
+name: Test basic terraform setup
 on:
   workflow_dispatch:
 jobs:
@@ -11,11 +11,12 @@ jobs:
         with:
           scalr_hostname: "test.scalr.io"
           scalr_token: "test-token-placeholder"
-          terraform_version: "1.5.0"
-          terraform_wrapper: "false"
-          terraform_output: "false"
+          iac_platform: "terraform"
+          binary_version: "1.5.0"
+          binary_wrapper: "false"
+          binary_output: "false"
         continue-on-error: true
       - name: Assert action ran
         run: |
           echo "Action outcome: ${{ steps.action.outcome }}"
-          echo "PASS: action step executed with deprecated terraform_version input"
+          echo "PASS: action step executed"
