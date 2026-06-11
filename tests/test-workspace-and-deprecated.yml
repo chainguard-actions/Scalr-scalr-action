@@ -1,4 +1,4 @@
-name: Test basic terraform usage
+name: Test workspace and deprecated terraform_version input
 on:
   workflow_dispatch:
 jobs:
@@ -11,17 +11,18 @@ jobs:
         with:
           scalr_hostname: "example.scalr.io"
           scalr_token: "fake-token-for-testing"
+          scalr_workspace: "ws-fake123456"
+          terraform_version: "1.8.0"
           iac_platform: "terraform"
-          binary_version: "1.9.0"
           binary_wrapper: "false"
           binary_output: "false"
-      - name: Assert terraform is installed
+      - name: Assert terraform is installed with specified version
         run: |
           echo "Checking terraform binary is installed..."
           if ! command -v terraform &> /dev/null; then
             echo "FAIL: terraform binary not found"
             exit 1
           fi
-          TF_VERSION=$(terraform version -json | python3 -c "import sys,json; print(json.load(sys.stdin)['terraform_version'])" 2>/dev/null || terraform version | head -1)
+          TF_VERSION=$(terraform version | head -1)
           echo "Terraform version: $TF_VERSION"
           echo "PASS"
