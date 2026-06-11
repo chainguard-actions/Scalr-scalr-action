@@ -4,20 +4,23 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    env:
+      GITHUB_REF: refs/heads/main
+      GITHUB_EVENT_NAME: push
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - id: action
         uses: .
+        continue-on-error: true
         with:
-          scalr_hostname: example.scalr.io
-          scalr_token: fake-token-for-testing
-          scalr_workspace: ws-fake123456789
+          scalr_hostname: "example.scalr.io"
+          scalr_token: "fake-token-for-testing"
+          scalr_workspace: "ws-fake123456"
           binary_version: "1.9.0"
-          iac_platform: terraform
+          iac_platform: "terraform"
           binary_wrapper: "false"
           binary_output: "false"
-        continue-on-error: true
-      - name: Assert action ran (may fail due to invalid credentials but should not crash on missing inputs)
+      - name: Assert action ran (may fail due to invalid credentials)
         run: |
           echo "Action outcome: ${{ steps.action.outcome }}"
-          echo "PASS: action step executed without missing required input errors"
+          echo "PASS: action step executed (credentials are fake, failure is expected)"
