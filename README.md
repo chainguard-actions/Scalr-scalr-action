@@ -8,6 +8,7 @@ Hardened by [Chainguard](https://www.chainguard.dev) from the upstream action at
 
 | Version | Tag | Upstream commit |
 |---------|-----|-----------------|
+| v1.4.0 | [`v1.4.0`](https://github.com/chainguard-actions/Scalr-scalr-action/tree/v1.4.0) | [`5549b00`](https://github.com/Scalr/scalr-action/commit/5549b00767d270f1f09c4c8d9e8add72a7b4d7d4) |
 | v1.6.0 | [`v1.6.0`](https://github.com/chainguard-actions/Scalr-scalr-action/tree/v1.6.0) | [`5f23d6e`](https://github.com/Scalr/scalr-action/commit/5f23d6e37e157434d6c2dca107382d2658457f60) |
 | v1.6.1 | [`v1.6.1`](https://github.com/chainguard-actions/Scalr-scalr-action/tree/v1.6.1) | [`c8e39ba`](https://github.com/Scalr/scalr-action/commit/c8e39babf163809e3dfcbeb171e8e4903edfff7a) |
 | v1.7.0 | [`v1.7.0`](https://github.com/chainguard-actions/Scalr-scalr-action/tree/v1.7.0) | [`4da3049`](https://github.com/Scalr/scalr-action/commit/4da3049c377ee9359820f9c83e6ba3fc8e30a7ff) |
