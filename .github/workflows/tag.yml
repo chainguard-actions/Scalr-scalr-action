@@ -1,0 +1,42 @@
+name: Move tag
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to move'
+        required: true
+        default: 'test'
+        type: choice
+        options:
+        - test
+        - v1
+      version:
+        description: 'Version'
+        default: 'v0.0.0'
+        required: true 
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Move tag
+    runs-on: 'ubuntu-latest'
+
+    steps:
+      - uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3
+        with:
+          fetch-depth: 0
+
+      - name: Push change to repo
+        env:
+          INPUT_TAG: ${{ inputs.tag }}
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          git config --global user.email "github@scalr.com"
+          git config --global user.name "Github Action"
+          HASH=$(git rev-parse "$INPUT_VERSION")
+          git tag -fa -m "Move tag to $HASH" "$INPUT_TAG" "$HASH"
+          git push -f origin "$INPUT_TAG"

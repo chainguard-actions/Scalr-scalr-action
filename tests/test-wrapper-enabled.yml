@@ -1,0 +1,51 @@
+name: Test Terraform wrapper enabled
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_REF: refs/heads/main
+      GITHUB_EVENT_NAME: push
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        with:
+          scalr_hostname: "example.scalr.io"
+          scalr_token: "fake-token-for-testing"
+          iac_platform: "terraform"
+          binary_version: "1.5.7"
+          binary_wrapper: "true"
+
+      - name: Assert terraform binary is available via wrapper
+        run: |
+          echo "Checking terraform binary (wrapper mode)..."
+          if ! command -v terraform &>/dev/null; then
+            echo "FAIL: terraform binary not found in PATH"
+            exit 1
+          fi
+          TF_PATH=$(which terraform)
+          echo "terraform path: $TF_PATH"
+          echo "PASS: terraform binary found at $TF_PATH"
+
+      - name: Assert terraform-bin exists alongside wrapper
+        run: |
+          echo "Checking for terraform-bin (original binary renamed by wrapper)..."
+          TF_DIR=$(dirname $(which terraform))
+          echo "terraform dir: $TF_DIR"
+          if [ ! -f "$TF_DIR/terraform-bin" ]; then
+            echo "FAIL: terraform-bin not found in $TF_DIR (wrapper should rename original binary)"
+            exit 1
+          fi
+          echo "PASS: terraform-bin found at $TF_DIR/terraform-bin"
+
+      - name: Assert TF_IN_AUTOMATION is set
+        run: |
+          echo "TF_IN_AUTOMATION=$TF_IN_AUTOMATION"
+          if [ "$TF_IN_AUTOMATION" != "TRUE" ]; then
+            echo "FAIL: expected TF_IN_AUTOMATION=TRUE but got '$TF_IN_AUTOMATION'"
+            exit 1
+          fi
+          echo "PASS: TF_IN_AUTOMATION is TRUE"

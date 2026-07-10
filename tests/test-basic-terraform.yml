@@ -1,0 +1,70 @@
+name: Test basic Terraform install
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_REF: refs/heads/main
+      GITHUB_EVENT_NAME: push
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        with:
+          scalr_hostname: "example.scalr.io"
+          scalr_token: "fake-token-for-testing"
+          iac_platform: "terraform"
+          binary_version: "1.5.7"
+          binary_wrapper: "false"
+
+      - name: Assert terraform binary is available
+        run: |
+          echo "Checking terraform binary..."
+          if ! command -v terraform &>/dev/null; then
+            echo "FAIL: terraform binary not found in PATH"
+            exit 1
+          fi
+          TF_VERSION=$(terraform version -json 2>/dev/null | grep -o '"terraform_version":"[^"]*"' | head -1 || terraform version 2>&1 | head -1)
+          echo "terraform version output: $TF_VERSION"
+          echo "PASS: terraform binary found"
+
+      - name: Assert TF_IN_AUTOMATION is set
+        run: |
+          echo "TF_IN_AUTOMATION=$TF_IN_AUTOMATION"
+          if [ "$TF_IN_AUTOMATION" != "TRUE" ]; then
+            echo "FAIL: expected TF_IN_AUTOMATION=TRUE but got '$TF_IN_AUTOMATION'"
+            exit 1
+          fi
+          echo "PASS: TF_IN_AUTOMATION is TRUE"
+
+      - name: Assert Scalr credentials file exists
+        run: |
+          CONF="$HOME/.scalr/scalr.conf"
+          echo "Checking $CONF..."
+          if [ ! -f "$CONF" ]; then
+            echo "FAIL: Scalr credentials file not found at $CONF"
+            exit 1
+          fi
+          echo "Contents: $(cat $CONF)"
+          if ! grep -q "example.scalr.io" "$CONF"; then
+            echo "FAIL: hostname not found in credentials file"
+            exit 1
+          fi
+          echo "PASS: Scalr credentials file exists and contains hostname"
+
+      - name: Assert Terraform credentials file exists
+        run: |
+          RC="$HOME/.terraformrc"
+          echo "Checking $RC..."
+          if [ ! -f "$RC" ]; then
+            echo "FAIL: Terraform credentials file not found at $RC"
+            exit 1
+          fi
+          echo "Contents: $(cat $RC)"
+          if ! grep -q "example.scalr.io" "$RC"; then
+            echo "FAIL: hostname not found in terraform credentials file"
+            exit 1
+          fi
+          echo "PASS: Terraform credentials file exists and contains hostname"

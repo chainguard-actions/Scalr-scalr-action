@@ -1,0 +1,53 @@
+name: Build dist files and release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        type: string
+        description: Version for new release
+        required: true
+        default: 0.0.0
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build dist files and release
+    runs-on: "ubuntu-latest"
+    steps:
+      - uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3
+        with:
+          fetch-depth: 0
+      - name: Install Node.js
+        uses: actions/setup-node@3235b876344d2a9aa001b8d1453c930bba69e610 # v3
+        with:
+          node-version: "20.11.1"
+
+      - name: Install dependencies
+        run: npm clean-install
+
+      - name: Install ncc
+        run: npm --location=global install @vercel/ncc
+
+      - name: Generate unified release files with ncc
+        run: |
+          ncc build src/terraform.js -o dist/terraform -m
+          ncc build src/wrapper.js -o dist/wrapper -m
+
+      - name: Add dist-files to last commit
+        run: |
+          git config --global user.email "github@scalr.com"
+          git config --global user.name "Github Action"
+          git add dist/*
+          git update-index --chmod=+x dist/wrapper/index.js
+          git commit -m "Auto-build dist files" --allow-empty
+          git push -f
+
+      - name: Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          INPUT_VERSION: ${{ github.event.inputs.version }}
+        run: |
+          gh release create "v${INPUT_VERSION}" --generate-notes
