@@ -1,0 +1,62 @@
+name: Test Terraform wrapper installation
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        with:
+          scalr_hostname: "wrapper-test.scalr.io"
+          scalr_token: "test-token-wrapper"
+          iac_platform: "terraform"
+          binary_version: "1.5.7"
+          binary_wrapper: "true"
+
+      - name: Assert terraform binary is on PATH
+        run: |
+          echo "Checking terraform binary..."
+          if ! command -v terraform >/dev/null 2>&1; then
+            echo "FAIL: terraform binary not found on PATH"
+            exit 1
+          fi
+          echo "PASS: terraform binary found at $(command -v terraform)"
+
+      - name: Assert terraform-bin (original binary) exists alongside wrapper
+        run: |
+          TF_PATH=$(command -v terraform)
+          TF_DIR=$(dirname "$TF_PATH")
+          echo "terraform directory: $TF_DIR"
+          echo "Contents of terraform directory:"
+          ls -la "$TF_DIR"
+          if [ ! -f "$TF_DIR/terraform-bin" ]; then
+            echo "FAIL: terraform-bin not found in $TF_DIR (wrapper was not installed)"
+            exit 1
+          fi
+          echo "PASS: terraform-bin found, wrapper is installed"
+
+      - name: Assert wrapper is a Node.js script
+        run: |
+          TF_PATH=$(command -v terraform)
+          echo "terraform path: $TF_PATH"
+          # The wrapper is a Node.js script, so it should start with a shebang or be a JS file
+          FILE_TYPE=$(file "$TF_PATH" 2>&1 || true)
+          echo "file type: $FILE_TYPE"
+          # The wrapper should NOT be an ELF binary (that's the real terraform)
+          if echo "$FILE_TYPE" | grep -q "ELF"; then
+            echo "FAIL: terraform appears to be the real binary, not the wrapper"
+            exit 1
+          fi
+          echo "PASS: terraform is the wrapper script (not the raw ELF binary)"
+
+      - name: Assert Scalr credentials file was created
+        run: |
+          CONF="$HOME/.scalr/scalr.conf"
+          if [ ! -f "$CONF" ]; then
+            echo "FAIL: Scalr credentials file not found at $CONF"
+            exit 1
+          fi
+          echo "PASS: Scalr credentials file exists"

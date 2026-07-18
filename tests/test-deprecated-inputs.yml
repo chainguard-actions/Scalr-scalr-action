@@ -1,0 +1,57 @@
+name: Test deprecated terraform_version and terraform_wrapper inputs
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        with:
+          scalr_hostname: "legacy.scalr.io"
+          scalr_token: "test-token-legacy"
+          terraform_version: "1.4.6"
+          terraform_wrapper: "false"
+
+      - name: Assert terraform binary is on PATH
+        run: |
+          echo "Checking terraform binary..."
+          if ! command -v terraform >/dev/null 2>&1; then
+            echo "FAIL: terraform binary not found on PATH (deprecated inputs did not work)"
+            exit 1
+          fi
+          echo "PASS: terraform binary found at $(command -v terraform)"
+
+      - name: Assert terraform version matches requested via deprecated input
+        run: |
+          VERSION_OUTPUT=$(terraform version 2>&1 || true)
+          echo "terraform version output: $VERSION_OUTPUT"
+          if ! echo "$VERSION_OUTPUT" | grep -q "1.4.6"; then
+            echo "FAIL: expected terraform version 1.4.6 (via deprecated terraform_version input)"
+            exit 1
+          fi
+          echo "PASS: terraform version 1.4.6 confirmed via deprecated input"
+
+      - name: Assert Scalr credentials file was created
+        run: |
+          CONF="$HOME/.scalr/scalr.conf"
+          if [ ! -f "$CONF" ]; then
+            echo "FAIL: Scalr credentials file not found at $CONF"
+            exit 1
+          fi
+          if ! grep -q "legacy.scalr.io" "$CONF"; then
+            echo "FAIL: hostname not found in credentials file"
+            exit 1
+          fi
+          echo "PASS: Scalr credentials file exists with correct hostname"
+
+      - name: Assert TF_IN_AUTOMATION is set
+        run: |
+          echo "TF_IN_AUTOMATION=$TF_IN_AUTOMATION"
+          if [ "$TF_IN_AUTOMATION" != "TRUE" ]; then
+            echo "FAIL: expected TF_IN_AUTOMATION=TRUE"
+            exit 1
+          fi
+          echo "PASS: TF_IN_AUTOMATION is TRUE"

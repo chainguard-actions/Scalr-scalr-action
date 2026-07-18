@@ -6,20 +6,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - id: action
+      - name: Run action with scalr_workspace input
+        id: action
         uses: .
         with:
           scalr_hostname: "example.scalr.io"
-          scalr_token: "fake-token-for-testing"
+          scalr_token: "fake-scalr-token"
           scalr_workspace: "ws-abc123"
           binary_version: "1.9.0"
+          iac_platform: "terraform"
           binary_wrapper: "false"
         continue-on-error: true
-      - name: Assert action ran with workspace input
+      - name: Assert terraform binary is installed
         run: |
-          echo "outcome: ${{ steps.action.outcome }}"
-          # The action may fail due to invalid credentials, but we just need
-          # to verify it accepted the scalr_workspace input without a
-          # "required input missing" type error.
-          # A missing required input would cause a different kind of failure.
-          echo "PASS: scalr_workspace input was accepted"
+          if command -v terraform >/dev/null 2>&1; then
+            echo "PASS: terraform binary found"
+            terraform version
+          else
+            echo "FAIL: terraform binary not found"
+            exit 1
+          fi

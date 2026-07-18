@@ -32,8 +32,8 @@ jobs:
 
       - name: Push change to repo
         env:
-          INPUT_TAG: ${{ inputs.tag }}
           INPUT_VERSION: ${{ inputs.version }}
+          INPUT_TAG: ${{ inputs.tag }}
         run: |
           git config --global user.email "github@scalr.com"
           git config --global user.name "Github Action"

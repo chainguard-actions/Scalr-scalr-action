@@ -4,67 +4,72 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    env:
-      GITHUB_REF: refs/heads/main
-      GITHUB_EVENT_NAME: push
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - id: action
         uses: .
         with:
-          scalr_hostname: "example.scalr.io"
-          scalr_token: "fake-token-for-testing"
+          scalr_hostname: "myorg.scalr.io"
+          scalr_token: "test-token-opentofu"
           iac_platform: "tofu"
           binary_version: "1.6.2"
           binary_wrapper: "false"
 
-      - name: Assert tofu binary is available
+      - name: Assert tofu binary is on PATH
         run: |
           echo "Checking tofu binary..."
-          if ! command -v tofu &>/dev/null; then
-            echo "FAIL: tofu binary not found in PATH"
+          if ! command -v tofu >/dev/null 2>&1; then
+            echo "FAIL: tofu binary not found on PATH"
             exit 1
           fi
-          TOFU_VERSION=$(tofu version 2>&1 | head -1)
-          echo "tofu version output: $TOFU_VERSION"
-          echo "PASS: tofu binary found"
+          echo "PASS: tofu binary found at $(command -v tofu)"
 
-      - name: Assert TF_IN_AUTOMATION is set
+      - name: Assert tofu version matches requested
         run: |
-          echo "TF_IN_AUTOMATION=$TF_IN_AUTOMATION"
-          if [ "$TF_IN_AUTOMATION" != "TRUE" ]; then
-            echo "FAIL: expected TF_IN_AUTOMATION=TRUE but got '$TF_IN_AUTOMATION'"
+          VERSION_OUTPUT=$(tofu version 2>&1 || true)
+          echo "tofu version output: $VERSION_OUTPUT"
+          if ! echo "$VERSION_OUTPUT" | grep -q "1.6.2"; then
+            echo "FAIL: expected tofu version 1.6.2 in output"
             exit 1
           fi
-          echo "PASS: TF_IN_AUTOMATION is TRUE"
+          echo "PASS: tofu version 1.6.2 confirmed"
 
-      - name: Assert Scalr credentials file exists
+      - name: Assert Scalr credentials file was created
         run: |
           CONF="$HOME/.scalr/scalr.conf"
-          echo "Checking $CONF..."
+          echo "Checking Scalr credentials file at $CONF"
           if [ ! -f "$CONF" ]; then
             echo "FAIL: Scalr credentials file not found at $CONF"
             exit 1
           fi
-          echo "Contents: $(cat $CONF)"
-          if ! grep -q "example.scalr.io" "$CONF"; then
+          echo "PASS: Scalr credentials file exists"
+          if ! grep -q "myorg.scalr.io" "$CONF"; then
             echo "FAIL: hostname not found in credentials file"
             exit 1
           fi
-          echo "PASS: Scalr credentials file exists and contains hostname"
+          echo "PASS: hostname found in credentials file"
 
-      - name: Assert OpenTofu credentials file exists
+      - name: Assert OpenTofu credentials file was created
         run: |
           RC="$HOME/.tofurc"
-          echo "Checking $RC..."
+          echo "Checking OpenTofu credentials file at $RC"
           if [ ! -f "$RC" ]; then
             echo "FAIL: OpenTofu credentials file not found at $RC"
             exit 1
           fi
-          echo "Contents: $(cat $RC)"
-          if ! grep -q "example.scalr.io" "$RC"; then
+          echo "PASS: OpenTofu credentials file exists"
+          if ! grep -q "myorg.scalr.io" "$RC"; then
             echo "FAIL: hostname not found in tofu credentials file"
             exit 1
           fi
-          echo "PASS: OpenTofu credentials file exists and contains hostname"
+          echo "PASS: hostname found in tofu credentials file"
+
+      - name: Assert TF_IN_AUTOMATION env var is set
+        run: |
+          echo "TF_IN_AUTOMATION=$TF_IN_AUTOMATION"
+          if [ "$TF_IN_AUTOMATION" != "TRUE" ]; then
+            echo "FAIL: expected TF_IN_AUTOMATION=TRUE"
+            exit 1
+          fi
+          echo "PASS: TF_IN_AUTOMATION is set to TRUE"
