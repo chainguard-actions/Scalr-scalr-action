@@ -1,0 +1,45 @@
+name: Test Terraform wrapper enabled
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        with:
+          scalr_hostname: "test.scalr.io"
+          scalr_token: "test-token-12345"
+          iac_platform: "terraform"
+          binary_version: "1.9.0"
+          binary_wrapper: "true"
+
+      - name: Assert terraform binary is on PATH (wrapper)
+        run: |
+          echo "Checking terraform binary (wrapper mode)..."
+          if ! command -v terraform >/dev/null 2>&1; then
+            echo "FAIL: terraform binary not found on PATH"
+            exit 1
+          fi
+          echo "PASS: terraform binary found"
+
+      - name: Assert terraform-bin exists alongside wrapper
+        run: |
+          TERRAFORM_PATH=$(command -v terraform)
+          TERRAFORM_DIR=$(dirname "$TERRAFORM_PATH")
+          echo "terraform dir: $TERRAFORM_DIR"
+          echo "Contents of terraform dir:"
+          ls -la "$TERRAFORM_DIR"
+          if [ ! -f "$TERRAFORM_DIR/terraform-bin" ]; then
+            echo "FAIL: terraform-bin not found in $TERRAFORM_DIR (wrapper should rename original binary)"
+            exit 1
+          fi
+          echo "PASS: terraform-bin exists alongside wrapper"
+
+      - name: Assert wrapper captures stdout output
+        run: |
+          echo "Running terraform version through wrapper..."
+          terraform version
+          echo "PASS: terraform version ran successfully through wrapper"

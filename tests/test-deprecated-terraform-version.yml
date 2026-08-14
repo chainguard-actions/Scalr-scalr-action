@@ -1,4 +1,4 @@
-name: Test deprecated terraform_version input with scalr_workspace
+name: Test deprecated terraform_version input backward compatibility
 on:
   workflow_dispatch:
 jobs:
@@ -6,23 +6,45 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
       - id: action
         uses: .
         with:
-          scalr_hostname: "example.scalr.io"
-          scalr_token: "fake-token-for-testing"
-          scalr_workspace: "ws-fake123456"
-          iac_platform: "terraform"
-          terraform_version: "1.5.7"
+          scalr_hostname: "test.scalr.io"
+          scalr_token: "test-token-12345"
+          terraform_version: "1.8.5"
           terraform_wrapper: "false"
           terraform_output: "false"
-        continue-on-error: true
-      - name: Assert terraform was installed
+
+      - name: Assert terraform binary is on PATH
         run: |
-          if command -v terraform &> /dev/null; then
-            echo "PASS: terraform binary found"
-            terraform version
-          else
-            echo "FAIL: terraform binary not found"
+          echo "Checking terraform binary (via deprecated terraform_version input)..."
+          if ! command -v terraform >/dev/null 2>&1; then
+            echo "FAIL: terraform binary not found on PATH"
             exit 1
           fi
+          echo "PASS: terraform binary found"
+
+      - name: Assert terraform version matches requested
+        run: |
+          VERSION=$(terraform version 2>/dev/null | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+          echo "actual version: $VERSION"
+          if [ "$VERSION" != "1.8.5" ]; then
+            echo "FAIL: expected terraform version 1.8.5, got $VERSION"
+            exit 1
+          fi
+          echo "PASS: terraform version is 1.8.5"
+
+      - name: Assert Scalr credentials file was created
+        run: |
+          SCALR_CONF="$HOME/.scalr/scalr.conf"
+          if [ ! -f "$SCALR_CONF" ]; then
+            echo "FAIL: Scalr credentials file not found"
+            exit 1
+          fi
+          echo "PASS: Scalr credentials file exists"
+          if ! grep -q "test.scalr.io" "$SCALR_CONF"; then
+            echo "FAIL: Scalr credentials file does not contain hostname"
+            exit 1
+          fi
+          echo "PASS: Scalr credentials file contains correct hostname"

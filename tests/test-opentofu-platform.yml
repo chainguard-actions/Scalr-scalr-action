@@ -1,0 +1,61 @@
+name: Test OpenTofu platform installation
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        with:
+          scalr_hostname: "test.scalr.io"
+          scalr_token: "test-token-12345"
+          iac_platform: "tofu"
+          binary_version: "1.8.0"
+          binary_wrapper: "false"
+
+      - name: Assert tofu binary is on PATH
+        run: |
+          echo "Checking tofu binary..."
+          if ! command -v tofu >/dev/null 2>&1; then
+            echo "FAIL: tofu binary not found on PATH"
+            exit 1
+          fi
+          echo "PASS: tofu binary found"
+
+      - name: Assert tofu version matches requested
+        run: |
+          VERSION=$(tofu version 2>/dev/null | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+          echo "actual version: $VERSION"
+          if [ "$VERSION" != "1.8.0" ]; then
+            echo "FAIL: expected tofu version 1.8.0, got $VERSION"
+            exit 1
+          fi
+          echo "PASS: tofu version is 1.8.0"
+
+      - name: Assert Scalr credentials file was created
+        run: |
+          SCALR_CONF="$HOME/.scalr/scalr.conf"
+          echo "Checking Scalr config at $SCALR_CONF"
+          if [ ! -f "$SCALR_CONF" ]; then
+            echo "FAIL: Scalr credentials file not found at $SCALR_CONF"
+            exit 1
+          fi
+          echo "PASS: Scalr credentials file exists"
+
+      - name: Assert OpenTofu credentials file was created
+        run: |
+          TOFU_RC="$HOME/.tofurc"
+          echo "Checking OpenTofu credentials at $TOFU_RC"
+          if [ ! -f "$TOFU_RC" ]; then
+            echo "FAIL: OpenTofu credentials file not found at $TOFU_RC"
+            exit 1
+          fi
+          echo "PASS: OpenTofu credentials file exists"
+          if ! grep -q "test.scalr.io" "$TOFU_RC"; then
+            echo "FAIL: OpenTofu credentials file does not contain hostname"
+            exit 1
+          fi
+          echo "PASS: OpenTofu credentials file contains hostname"

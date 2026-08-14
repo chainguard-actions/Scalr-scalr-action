@@ -1,0 +1,32 @@
+name: Test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Test
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+    defaults:
+      run:
+        shell: bash
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+      - uses: Scalr/scalr-action@76080cd0a829901e43a19d15969298fb9e476cf7 # master
+        with:
+          terraform_version: '1.3.7'
+          scalr_token: ${{ secrets.SCALR_TOKEN }}
+          scalr_hostname: 'test.scalr.io'
+
+      - id: version
+        name: Terraform version
+        run: terraform -v
+
+      - id: cli-version
+        name: Scalr CLI version
+        run: scalr -version

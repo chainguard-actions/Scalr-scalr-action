@@ -1,0 +1,29 @@
+name: Test scalr_workspace input
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          scalr_hostname: "example.scalr.io"
+          scalr_token: "fake-scalr-token-for-testing"
+          scalr_workspace: "ws-abc123"
+          iac_platform: "terraform"
+          binary_wrapper: "false"
+        continue-on-error: true
+      - name: Assert action ran with scalr_workspace input
+        run: |
+          echo "outcome: ${{ steps.action.outcome }}"
+          # The action may fail due to invalid credentials, but it must have
+          # attempted to run (not skipped). We verify it was invoked by checking
+          # the outcome is either success or failure (not skipped/cancelled).
+          OUTCOME="${{ steps.action.outcome }}"
+          if [ "$OUTCOME" = "skipped" ] || [ "$OUTCOME" = "cancelled" ]; then
+            echo "FAIL: action was not invoked (outcome=$OUTCOME)"
+            exit 1
+          fi
+          echo "PASS: action was invoked with scalr_workspace input (outcome=$OUTCOME)"

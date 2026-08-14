@@ -1,4 +1,4 @@
-name: Test basic terraform usage
+name: Test basic Terraform installation
 on:
   workflow_dispatch:
 jobs:
@@ -6,22 +6,68 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
       - id: action
         uses: .
         with:
-          scalr_hostname: "example.scalr.io"
-          scalr_token: "fake-token-for-testing"
+          scalr_hostname: "test.scalr.io"
+          scalr_token: "test-token-12345"
           iac_platform: "terraform"
           binary_version: "1.9.0"
           binary_wrapper: "false"
-          binary_output: "false"
-      - name: Assert terraform is installed
+
+      - name: Assert terraform binary is on PATH
         run: |
-          echo "Checking terraform binary is installed..."
-          if ! command -v terraform &> /dev/null; then
-            echo "FAIL: terraform binary not found"
+          echo "Checking terraform binary..."
+          if ! command -v terraform >/dev/null 2>&1; then
+            echo "FAIL: terraform binary not found on PATH"
             exit 1
           fi
-          TF_VERSION=$(terraform version -json | python3 -c "import sys,json; print(json.load(sys.stdin)['terraform_version'])" 2>/dev/null || terraform version | head -1)
-          echo "Terraform version: $TF_VERSION"
-          echo "PASS"
+          echo "PASS: terraform binary found"
+
+      - name: Assert terraform version matches requested
+        run: |
+          VERSION=$(terraform version -json 2>/dev/null | grep '"terraform_version"' | sed 's/.*: "\(.*\)".*/\1/' || terraform version | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')
+          echo "actual version: $VERSION"
+          if [ "$VERSION" != "1.9.0" ]; then
+            echo "FAIL: expected terraform version 1.9.0, got $VERSION"
+            exit 1
+          fi
+          echo "PASS: terraform version is 1.9.0"
+
+      - name: Assert Scalr credentials file was created
+        run: |
+          SCALR_CONF="$HOME/.scalr/scalr.conf"
+          echo "Checking Scalr config at $SCALR_CONF"
+          if [ ! -f "$SCALR_CONF" ]; then
+            echo "FAIL: Scalr credentials file not found at $SCALR_CONF"
+            exit 1
+          fi
+          echo "PASS: Scalr credentials file exists"
+          cat "$SCALR_CONF"
+
+      - name: Assert Terraform credentials file was created
+        run: |
+          TF_RC="$HOME/.terraformrc"
+          echo "Checking Terraform credentials at $TF_RC"
+          if [ ! -f "$TF_RC" ]; then
+            echo "FAIL: Terraform credentials file not found at $TF_RC"
+            exit 1
+          fi
+          echo "PASS: Terraform credentials file exists"
+          if ! grep -q "test.scalr.io" "$TF_RC"; then
+            echo "FAIL: Terraform credentials file does not contain hostname"
+            exit 1
+          fi
+          echo "PASS: Terraform credentials file contains hostname"
+
+      - name: Assert TF_IN_AUTOMATION env var is set
+        env:
+          TF_IN_AUTOMATION: ${{ env.TF_IN_AUTOMATION }}
+        run: |
+          echo "TF_IN_AUTOMATION: $TF_IN_AUTOMATION"
+          if [ "$TF_IN_AUTOMATION" != "TRUE" ]; then
+            echo "FAIL: expected TF_IN_AUTOMATION=TRUE, got '$TF_IN_AUTOMATION'"
+            exit 1
+          fi
+          echo "PASS: TF_IN_AUTOMATION is TRUE"
