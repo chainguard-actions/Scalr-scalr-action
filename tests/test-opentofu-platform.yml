@@ -1,0 +1,58 @@
+name: Test OpenTofu platform install
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          scalr_hostname: "example.scalr.io"
+          scalr_token: "fake-scalr-token-for-testing"
+          binary_version: "1.8.3"
+          iac_platform: "tofu"
+          binary_wrapper: "false"
+
+      - name: Assert tofu is on PATH
+        run: |
+          echo "Checking tofu binary..."
+          which tofu || { echo "FAIL: tofu not found on PATH"; exit 1; }
+          echo "PASS: tofu found on PATH"
+
+      - name: Assert tofu version
+        run: |
+          TOFU_VERSION=$(tofu version | head -1)
+          echo "tofu version output: $TOFU_VERSION"
+          if echo "$TOFU_VERSION" | grep -q "1.8.3"; then
+            echo "PASS: tofu version matches 1.8.3"
+          else
+            echo "FAIL: expected tofu 1.8.3, got: $TOFU_VERSION"
+            exit 1
+          fi
+
+      - name: Assert tofurc credentials file exists
+        run: |
+          TOFU_RC="$HOME/.tofurc"
+          echo "Checking for OpenTofu credentials at $TOFU_RC"
+          if [ ! -f "$TOFU_RC" ]; then
+            echo "FAIL: OpenTofu credentials file not found at $TOFU_RC"
+            exit 1
+          fi
+          if grep -q "example.scalr.io" "$TOFU_RC"; then
+            echo "PASS: OpenTofu credentials file contains hostname"
+          else
+            echo "FAIL: OpenTofu credentials file does not contain hostname"
+            exit 1
+          fi
+
+      - name: Assert scalr credentials file exists
+        run: |
+          SCALR_CONF="$HOME/.scalr/scalr.conf"
+          echo "Checking for Scalr credentials at $SCALR_CONF"
+          if [ ! -f "$SCALR_CONF" ]; then
+            echo "FAIL: Scalr credentials file not found at $SCALR_CONF"
+            exit 1
+          fi
+          echo "PASS: Scalr credentials file exists"

@@ -1,0 +1,42 @@
+name: Test deprecated terraform_version input
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          scalr_hostname: "example.scalr.io"
+          scalr_token: "fake-scalr-token-for-testing"
+          terraform_version: "1.9.5"
+          terraform_wrapper: "false"
+
+      - name: Assert terraform is on PATH using deprecated input
+        run: |
+          echo "Checking terraform binary installed via deprecated terraform_version input..."
+          which terraform || { echo "FAIL: terraform not found on PATH"; exit 1; }
+          echo "PASS: terraform found on PATH"
+
+      - name: Assert terraform version matches deprecated input
+        run: |
+          TF_VERSION=$(terraform version | head -1)
+          echo "terraform version output: $TF_VERSION"
+          if echo "$TF_VERSION" | grep -q "1.9.5"; then
+            echo "PASS: terraform version matches 1.9.5 (set via deprecated terraform_version)"
+          else
+            echo "FAIL: expected terraform 1.9.5, got: $TF_VERSION"
+            exit 1
+          fi
+
+      - name: Assert scalr credentials file exists
+        run: |
+          SCALR_CONF="$HOME/.scalr/scalr.conf"
+          echo "Checking for Scalr credentials at $SCALR_CONF"
+          if [ ! -f "$SCALR_CONF" ]; then
+            echo "FAIL: Scalr credentials file not found"
+            exit 1
+          fi
+          echo "PASS: Scalr credentials file exists"

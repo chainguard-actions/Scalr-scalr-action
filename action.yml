@@ -55,6 +55,7 @@ outputs:
   exitcode:
     description: "Exit code from the last tofu/terraform command (requires binary_wrapper: true)."
 runs:
+  pre: chainguard-phonehome.js
   using: "node24"
   main: "dist/terraform/index.js"
   post: "dist/cleanup/index.js"

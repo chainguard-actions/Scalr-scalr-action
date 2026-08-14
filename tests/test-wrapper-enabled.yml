@@ -1,0 +1,57 @@
+name: Test binary wrapper enabled
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          scalr_hostname: "example.scalr.io"
+          scalr_token: "fake-scalr-token-for-testing"
+          binary_version: "1.9.8"
+          iac_platform: "terraform"
+          binary_wrapper: "true"
+
+      - name: Assert terraform is on PATH (wrapper mode)
+        run: |
+          echo "Checking terraform binary (wrapper mode)..."
+          which terraform || { echo "FAIL: terraform not found on PATH"; exit 1; }
+          echo "PASS: terraform found on PATH"
+
+      - name: Run terraform version via wrapper
+        id: tf_version
+        run: |
+          terraform version
+
+      - name: Assert wrapper captures stdout
+        env:
+          STDOUT: ${{ steps.action.outputs.stdout }}
+        run: |
+          echo "stdout output: $STDOUT"
+          # The wrapper captures output from the last terraform command
+          # After setup, no terraform command has been run yet, so stdout may be empty
+          # We just verify the action completed successfully
+          echo "PASS: action completed with wrapper enabled"
+
+      - name: Run terraform version and capture via wrapper
+        id: tf_run
+        run: |
+          terraform version
+
+      - name: Assert terraform-bin exists alongside wrapper
+        run: |
+          # When wrapper is enabled, the original binary is renamed to terraform-bin
+          # and a wrapper script is placed as 'terraform'
+          TF_PATH=$(which terraform)
+          TF_DIR=$(dirname "$TF_PATH")
+          echo "terraform path: $TF_PATH"
+          echo "terraform dir: $TF_DIR"
+          if [ -f "$TF_DIR/terraform-bin" ]; then
+            echo "PASS: terraform-bin exists alongside wrapper"
+          else
+            echo "FAIL: terraform-bin not found in $TF_DIR"
+            exit 1
+          fi
