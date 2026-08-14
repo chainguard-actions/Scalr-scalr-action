@@ -1,0 +1,89 @@
+name: Test OpenTofu platform install
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          scalr_hostname: "myorg.scalr.io"
+          scalr_token: "test-token-opentofu"
+          iac_platform: "tofu"
+          binary_version: "1.7.3"
+          binary_wrapper: "false"
+
+      - name: Check action outcome
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "action outcome: $OUTCOME"
+          if [ "$OUTCOME" != "success" ]; then
+            echo "FAIL: action did not succeed (outcome=$OUTCOME)"
+            exit 1
+          fi
+          echo "PASS: action succeeded"
+
+      - name: Assert tofu binary is installed
+        run: |
+          echo "Checking tofu binary..."
+          if ! command -v tofu >/dev/null 2>&1; then
+            echo "FAIL: tofu binary not found in PATH"
+            exit 1
+          fi
+          echo "PASS: tofu binary found at $(command -v tofu)"
+
+      - name: Assert tofu version
+        run: |
+          echo "Running: tofu version"
+          tofu version || true
+          VERSION=$(tofu version 2>&1 | head -1)
+          echo "actual version output: $VERSION"
+          if ! echo "$VERSION" | grep -q "1.7.3"; then
+            echo "FAIL: expected tofu version 1.7.3, got: $VERSION"
+            exit 1
+          fi
+          echo "PASS: tofu version is 1.7.3"
+
+      - name: Assert Scalr credentials file exists
+        run: |
+          CREDS_FILE="$HOME/.scalr/scalr.conf"
+          echo "Checking $CREDS_FILE..."
+          if [ ! -f "$CREDS_FILE" ]; then
+            echo "FAIL: Scalr credentials file not found at $CREDS_FILE"
+            echo "HOME=$HOME"
+            ls -la "$HOME/" 2>/dev/null || true
+            exit 1
+          fi
+          echo "PASS: Scalr credentials file exists"
+
+      - name: Assert OpenTofu credentials file exists
+        run: |
+          RC_FILE="$HOME/.tofurc"
+          echo "Checking $RC_FILE..."
+          if [ ! -f "$RC_FILE" ]; then
+            echo "FAIL: .tofurc not found at $RC_FILE"
+            echo "HOME=$HOME"
+            ls -la "$HOME/" 2>/dev/null || true
+            exit 1
+          fi
+          echo "PASS: .tofurc exists"
+          if ! grep -q "myorg.scalr.io" "$RC_FILE"; then
+            echo "FAIL: .tofurc does not contain the hostname"
+            cat "$RC_FILE"
+            exit 1
+          fi
+          echo "PASS: .tofurc contains correct hostname"
+
+      - name: Assert TF_IN_AUTOMATION env var is set
+        run: |
+          echo "TF_IN_AUTOMATION=$TF_IN_AUTOMATION"
+          if [ "$TF_IN_AUTOMATION" != "TRUE" ]; then
+            echo "FAIL: expected TF_IN_AUTOMATION=TRUE, got: '$TF_IN_AUTOMATION'"
+            exit 1
+          fi
+          echo "PASS: TF_IN_AUTOMATION is set correctly"

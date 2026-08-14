@@ -1,0 +1,35 @@
+name: Test validation error for conflicting workspace inputs
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        # Providing both scalr_workspace and scalr_workspace_name should cause a validation error
+        continue-on-error: true
+        with:
+          scalr_hostname: "test.scalr.io"
+          scalr_token: "test-token-12345"
+          scalr_workspace: "ws-abc123"
+          scalr_workspace_name: "my-workspace"
+          scalr_environment_name: "my-environment"
+          binary_version: "1.5.7"
+
+      - name: Assert action failed due to conflicting inputs
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "action outcome: $OUTCOME"
+          if [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action correctly failed with conflicting workspace inputs"
+          elif [ "$OUTCOME" = "success" ]; then
+            echo "FAIL: expected action to fail when both scalr_workspace and scalr_workspace_name are provided, but it succeeded"
+            exit 1
+          else
+            echo "FAIL: unexpected action outcome '$OUTCOME' (expected 'failure')"
+            exit 1
+          fi

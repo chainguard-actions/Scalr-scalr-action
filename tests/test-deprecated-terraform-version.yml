@@ -6,17 +6,55 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
       - id: action
         uses: .
-        with:
-          scalr_hostname: example.scalr.io
-          scalr_token: fake-token-for-testing
-          terraform_version: "1.5.0"
-          iac_platform: terraform
-          binary_wrapper: "false"
-          binary_output: "false"
         continue-on-error: true
-      - name: Assert action ran with deprecated terraform_version input
+        with:
+          scalr_hostname: "test.scalr.io"
+          scalr_token: "test-token-deprecated"
+          iac_platform: "terraform"
+          # Use deprecated terraform_version input instead of binary_version
+          terraform_version: "1.6.6"
+          binary_wrapper: "false"
+
+      - name: Check action outcome
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
         run: |
-          echo "Action outcome: ${{ steps.action.outcome }}"
-          echo "PASS: action step executed with deprecated terraform_version input"
+          echo "action outcome: $OUTCOME"
+          if [ "$OUTCOME" != "success" ]; then
+            echo "FAIL: action did not succeed (outcome=$OUTCOME)"
+            exit 1
+          fi
+          echo "PASS: action succeeded"
+
+      - name: Assert terraform binary is installed via deprecated input
+        run: |
+          echo "Checking terraform binary..."
+          if ! command -v terraform >/dev/null 2>&1; then
+            echo "FAIL: terraform binary not found in PATH"
+            exit 1
+          fi
+          echo "PASS: terraform binary found at $(command -v terraform)"
+
+      - name: Assert terraform version matches deprecated input
+        run: |
+          echo "Running: terraform version"
+          terraform version || true
+          VERSION=$(terraform version 2>&1 | head -1)
+          echo "actual version output: $VERSION"
+          if ! echo "$VERSION" | grep -q "1.6.6"; then
+            echo "FAIL: expected terraform version 1.6.6 (from deprecated terraform_version input), got: $VERSION"
+            exit 1
+          fi
+          echo "PASS: terraform version 1.6.6 installed via deprecated terraform_version input"
+
+      - name: Assert TF_IN_AUTOMATION is set
+        run: |
+          echo "TF_IN_AUTOMATION=$TF_IN_AUTOMATION"
+          if [ "$TF_IN_AUTOMATION" != "TRUE" ]; then
+            echo "FAIL: expected TF_IN_AUTOMATION=TRUE, got: '$TF_IN_AUTOMATION'"
+            exit 1
+          fi
+          echo "PASS"

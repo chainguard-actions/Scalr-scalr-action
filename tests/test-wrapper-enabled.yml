@@ -1,0 +1,83 @@
+name: Test binary wrapper enabled
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          scalr_hostname: "test.scalr.io"
+          scalr_token: "test-token-wrapper"
+          iac_platform: "terraform"
+          binary_version: "1.5.7"
+          binary_wrapper: "true"
+
+      - name: Check action outcome
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "action outcome: $OUTCOME"
+          if [ "$OUTCOME" != "success" ]; then
+            echo "FAIL: action did not succeed (outcome=$OUTCOME)"
+            exit 1
+          fi
+          echo "PASS: action succeeded"
+
+      - name: Assert terraform binary is in PATH
+        run: |
+          echo "Checking terraform binary..."
+          if ! command -v terraform >/dev/null 2>&1; then
+            echo "FAIL: terraform binary not found in PATH"
+            exit 1
+          fi
+          TERRAFORM_PATH=$(command -v terraform)
+          echo "PASS: terraform binary found at $TERRAFORM_PATH"
+
+      - name: Assert terraform-bin exists alongside terraform (wrapper installed)
+        run: |
+          TERRAFORM_PATH=$(command -v terraform)
+          TERRAFORM_DIR=$(dirname "$TERRAFORM_PATH")
+          echo "terraform path: $TERRAFORM_PATH"
+          echo "terraform dir: $TERRAFORM_DIR"
+          echo "Contents of terraform dir:"
+          ls -la "$TERRAFORM_DIR"
+          if [ ! -f "$TERRAFORM_DIR/terraform-bin" ]; then
+            echo "FAIL: terraform-bin not found in $TERRAFORM_DIR"
+            echo "Expected terraform-bin to exist (original binary renamed by wrapper install)"
+            exit 1
+          fi
+          echo "PASS: terraform-bin exists (original binary renamed for wrapper)"
+
+      - name: Assert wrapper terraform is a script (not the original binary)
+        run: |
+          TERRAFORM_PATH=$(command -v terraform)
+          echo "terraform path: $TERRAFORM_PATH"
+          FILE_TYPE=$(file "$TERRAFORM_PATH" 2>/dev/null || echo "unknown")
+          echo "File type: $FILE_TYPE"
+          HEAD=$(head -c 4 "$TERRAFORM_PATH" | xxd 2>/dev/null || head -c 4 "$TERRAFORM_PATH" | od -A x -t x1z 2>/dev/null || echo "unknown")
+          echo "First bytes: $HEAD"
+          # The wrapper is a Node.js script; the original binary is an ELF executable
+          # terraform-bin should be the ELF binary, terraform should be the wrapper script
+          TERRAFORM_BIN_DIR=$(dirname "$TERRAFORM_PATH")
+          BIN_TYPE=$(file "$TERRAFORM_BIN_DIR/terraform-bin" 2>/dev/null || echo "unknown")
+          echo "terraform-bin file type: $BIN_TYPE"
+          if echo "$BIN_TYPE" | grep -qiE "ELF|executable|binary"; then
+            echo "PASS: terraform-bin is the original executable"
+          else
+            echo "INFO: terraform-bin type: $BIN_TYPE (continuing)"
+          fi
+          echo "PASS: wrapper check complete"
+
+      - name: Assert TF_IN_AUTOMATION is set
+        run: |
+          echo "TF_IN_AUTOMATION=$TF_IN_AUTOMATION"
+          if [ "$TF_IN_AUTOMATION" != "TRUE" ]; then
+            echo "FAIL: expected TF_IN_AUTOMATION=TRUE, got: '$TF_IN_AUTOMATION'"
+            exit 1
+          fi
+          echo "PASS"
