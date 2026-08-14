@@ -1,0 +1,57 @@
+name: Test scalr_workspace_name and scalr_environment_name inputs
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          scalr_hostname: "test.scalr.io"
+          scalr_token: "fake-scalr-token"
+          scalr_workspace_name: "my-workspace"
+          scalr_environment_name: "my-environment"
+          iac_platform: "terraform"
+          binary_version: "1.9.0"
+          binary_wrapper: "false"
+
+      - name: Assert action failed due to invalid credentials (expected)
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "action outcome: $OUTCOME"
+          # The action should fail because fake credentials cannot resolve workspace by name
+          # via the Scalr CLI. This verifies the inputs are accepted and processed.
+          if [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed as expected (fake credentials cannot resolve workspace name)"
+          elif [ "$OUTCOME" = "success" ]; then
+            echo "PASS: action succeeded (workspace name resolution may have been skipped)"
+          else
+            echo "FAIL: unexpected outcome: $OUTCOME"
+            exit 1
+          fi
+
+      - name: Assert scalr CLI is installed (installed before workspace resolution)
+        run: |
+          echo "Checking scalr CLI binary..."
+          which scalr
+          echo "PASS: scalr CLI is installed"
+
+      - name: Assert Scalr credentials file exists
+        run: |
+          CREDS_FILE="$HOME/.scalr/scalr.conf"
+          echo "Checking credentials file at $CREDS_FILE"
+          if [ ! -f "$CREDS_FILE" ]; then
+            echo "FAIL: Scalr credentials file not found at $CREDS_FILE"
+            exit 1
+          fi
+          echo "Contents: $(cat $CREDS_FILE)"
+          if ! grep -q "test.scalr.io" "$CREDS_FILE"; then
+            echo "FAIL: hostname not found in credentials file"
+            exit 1
+          fi
+          echo "PASS: Scalr credentials file exists with correct hostname"

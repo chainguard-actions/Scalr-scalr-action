@@ -1,0 +1,72 @@
+name: Test OpenTofu platform setup
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          scalr_hostname: "test.scalr.io"
+          scalr_token: "fake-scalr-token"
+          iac_platform: "tofu"
+          binary_version: "1.8.0"
+          binary_wrapper: "false"
+
+      - name: Assert tofu is installed
+        run: |
+          echo "Checking tofu binary..."
+          which tofu
+          TOFU_VERSION=$(tofu version | head -1)
+          echo "tofu version: $TOFU_VERSION"
+          if ! tofu version | grep -q "1.8.0"; then
+            echo "FAIL: expected tofu 1.8.0 to be installed"
+            exit 1
+          fi
+          echo "PASS: tofu 1.8.0 is installed"
+
+      - name: Assert scalr CLI is installed
+        run: |
+          echo "Checking scalr CLI binary..."
+          which scalr
+          echo "PASS: scalr CLI is installed"
+
+      - name: Assert Scalr credentials file exists
+        run: |
+          CREDS_FILE="$HOME/.scalr/scalr.conf"
+          echo "Checking credentials file at $CREDS_FILE"
+          if [ ! -f "$CREDS_FILE" ]; then
+            echo "FAIL: Scalr credentials file not found at $CREDS_FILE"
+            exit 1
+          fi
+          if ! grep -q "test.scalr.io" "$CREDS_FILE"; then
+            echo "FAIL: hostname not found in credentials file"
+            exit 1
+          fi
+          echo "PASS: Scalr credentials file exists with correct hostname"
+
+      - name: Assert OpenTofu credentials file exists
+        run: |
+          TOFURC_FILE="$HOME/.tofurc"
+          echo "Checking OpenTofu credentials file at $TOFURC_FILE"
+          if [ ! -f "$TOFURC_FILE" ]; then
+            echo "FAIL: OpenTofu credentials file not found at $TOFURC_FILE"
+            exit 1
+          fi
+          echo "Contents: $(cat $TOFURC_FILE)"
+          if ! grep -q "test.scalr.io" "$TOFURC_FILE"; then
+            echo "FAIL: hostname not found in OpenTofu credentials file"
+            exit 1
+          fi
+          echo "PASS: OpenTofu credentials file exists with correct hostname"
+
+      - name: Assert TF_IN_AUTOMATION is set
+        run: |
+          echo "TF_IN_AUTOMATION=$TF_IN_AUTOMATION"
+          if [ "$TF_IN_AUTOMATION" != "TRUE" ]; then
+            echo "FAIL: expected TF_IN_AUTOMATION=TRUE"
+            exit 1
+          fi
+          echo "PASS: TF_IN_AUTOMATION is set to TRUE"
