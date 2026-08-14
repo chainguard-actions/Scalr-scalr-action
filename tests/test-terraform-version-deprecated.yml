@@ -1,0 +1,33 @@
+name: Test deprecated terraform_version input
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          scalr_hostname: "test.scalr.io"
+          scalr_token: "test-token"
+          iac_platform: "terraform"
+          terraform_version: "1.5.7"
+          binary_wrapper: "false"
+      - name: Assert terraform is installed
+        run: |
+          if ! command -v terraform &>/dev/null; then
+            echo "FAIL: terraform binary not found"
+            exit 1
+          fi
+          echo "PASS: terraform is installed"
+      - name: Assert terraform version matches deprecated input
+        run: |
+          VERSION=$(terraform version -json | python3 -c "import sys,json; print(json.load(sys.stdin)['terraform_version'])" 2>/dev/null || terraform version | head -1)
+          echo "actual version output: $VERSION"
+          if echo "$VERSION" | grep -q "1.5.7"; then
+            echo "PASS: terraform version matches deprecated terraform_version input"
+          else
+            echo "FAIL: expected terraform 1.5.7 but got: $VERSION"
+            exit 1
+          fi

@@ -1,4 +1,4 @@
-name: Test basic Terraform usage
+name: Test OpenTofu platform usage
 on:
   workflow_dispatch:
 jobs:
@@ -10,31 +10,31 @@ jobs:
       - id: action
         uses: .
         with:
-          scalr_hostname: "test.scalr.io"
-          scalr_token: "test-token-12345"
-          iac_platform: "terraform"
-          binary_version: "1.9.0"
+          scalr_hostname: "myorg.scalr.io"
+          scalr_token: "test-token-opentofu"
+          iac_platform: "tofu"
+          binary_version: "1.7.0"
           binary_wrapper: "false"
 
-      - name: Assert terraform binary is on PATH
+      - name: Assert tofu binary is on PATH
         run: |
           echo "PATH=$PATH"
-          echo "Checking terraform binary..."
-          if ! which terraform; then
-            echo "FAIL: terraform not found on PATH"
+          echo "Checking tofu binary..."
+          if ! which tofu; then
+            echo "FAIL: tofu not found on PATH"
             exit 1
           fi
-          echo "PASS: terraform found on PATH at $(which terraform)"
+          echo "PASS: tofu found on PATH at $(which tofu)"
 
-      - name: Assert terraform version
+      - name: Assert tofu version
         run: |
-          echo "Running terraform version..."
-          TF_VERSION_OUTPUT=$(terraform version 2>&1 | head -5)
-          echo "actual version output: $TF_VERSION_OUTPUT"
-          if echo "$TF_VERSION_OUTPUT" | grep -q "1.9.0"; then
-            echo "PASS: terraform version 1.9.0 found"
+          echo "Running tofu version..."
+          TOFU_VERSION=$(tofu version 2>&1 | head -5)
+          echo "actual version output: $TOFU_VERSION"
+          if echo "$TOFU_VERSION" | grep -q "1.7.0"; then
+            echo "PASS: tofu version 1.7.0 found"
           else
-            echo "FAIL: expected terraform 1.9.0 but got: $TF_VERSION_OUTPUT"
+            echo "FAIL: expected tofu 1.7.0 but got: $TOFU_VERSION"
             exit 1
           fi
 
@@ -47,7 +47,7 @@ jobs:
           fi
           echo "PASS: scalr found on PATH at $(which scalr)"
 
-      - name: Assert Scalr credentials file was created
+      - name: Assert Scalr credentials file was created with correct hostname
         run: |
           SCALR_CONF="$HOME/.scalr/scalr.conf"
           echo "Checking Scalr credentials file at $SCALR_CONF"
@@ -57,33 +57,33 @@ jobs:
             ls -la "$HOME/.scalr" 2>/dev/null || echo "(directory does not exist)"
             exit 1
           fi
-          echo "PASS: Scalr credentials file exists"
           echo "File contents:"
           cat "$SCALR_CONF"
-          if grep -q "test.scalr.io" "$SCALR_CONF"; then
+          if grep -q "myorg.scalr.io" "$SCALR_CONF"; then
             echo "PASS: hostname found in credentials file"
           else
             echo "FAIL: hostname not found in credentials file"
             exit 1
           fi
 
-      - name: Assert Terraform credentials file was created
+      - name: Assert OpenTofu credentials file was created
         run: |
-          TF_RC="$HOME/.terraformrc"
-          echo "Checking Terraform credentials file at $TF_RC"
-          if [ ! -f "$TF_RC" ]; then
-            echo "FAIL: Terraform credentials file not found at $TF_RC"
-            echo "Home directory contents:"
-            ls -la "$HOME/" 2>/dev/null
+          # OpenTofu uses .tofurc (iacPlatform=tofu -> ~/.tofurc)
+          TOFU_RC="$HOME/.tofurc"
+          echo "Checking OpenTofu credentials file at $TOFU_RC"
+          echo "Home directory contents:"
+          ls -la "$HOME/" 2>/dev/null
+          if [ ! -f "$TOFU_RC" ]; then
+            echo "FAIL: OpenTofu credentials file not found at $TOFU_RC"
             exit 1
           fi
-          echo "PASS: Terraform credentials file exists"
+          echo "PASS: OpenTofu credentials file exists"
           echo "File contents:"
-          cat "$TF_RC"
-          if grep -q "test.scalr.io" "$TF_RC"; then
-            echo "PASS: hostname found in terraform credentials file"
+          cat "$TOFU_RC"
+          if grep -q "myorg.scalr.io" "$TOFU_RC"; then
+            echo "PASS: hostname found in tofu credentials file"
           else
-            echo "FAIL: hostname not found in terraform credentials file"
+            echo "FAIL: hostname not found in tofu credentials file"
             exit 1
           fi
 

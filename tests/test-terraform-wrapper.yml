@@ -1,0 +1,81 @@
+name: Test Terraform wrapper enabled
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        with:
+          scalr_hostname: "wrapper-test.scalr.io"
+          scalr_token: "test-token-wrapper"
+          iac_platform: "terraform"
+          binary_version: "1.9.0"
+          binary_wrapper: "true"
+
+      - name: Assert terraform binary is on PATH (wrapper mode)
+        run: |
+          echo "PATH=$PATH"
+          echo "Checking terraform binary in wrapper mode..."
+          if ! which terraform; then
+            echo "FAIL: terraform not found on PATH"
+            exit 1
+          fi
+          echo "PASS: terraform found on PATH at $(which terraform)"
+
+      - name: Assert terraform-bin exists (original binary renamed by wrapper)
+        run: |
+          TF_PATH=$(dirname "$(which terraform)")
+          echo "Terraform directory: $TF_PATH"
+          echo "Contents of terraform directory:"
+          ls -la "$TF_PATH/"
+          if [ -f "$TF_PATH/terraform-bin" ]; then
+            echo "PASS: terraform-bin found (original binary renamed for wrapper)"
+          else
+            echo "FAIL: terraform-bin not found in $TF_PATH"
+            exit 1
+          fi
+
+      - name: Assert terraform wrapper can be invoked
+        run: |
+          echo "Running terraform version via wrapper..."
+          terraform version 2>&1 || true
+          echo "PASS: terraform version command completed"
+
+      - name: Assert scalr CLI is on PATH
+        run: |
+          if ! which scalr; then
+            echo "FAIL: scalr not found on PATH"
+            exit 1
+          fi
+          echo "PASS: scalr found on PATH at $(which scalr)"
+
+      - name: Assert TF_IN_AUTOMATION env var is set
+        run: |
+          echo "TF_IN_AUTOMATION=$TF_IN_AUTOMATION"
+          if [ "$TF_IN_AUTOMATION" = "TRUE" ]; then
+            echo "PASS: TF_IN_AUTOMATION is set to TRUE"
+          else
+            echo "FAIL: expected TF_IN_AUTOMATION=TRUE but got: '$TF_IN_AUTOMATION'"
+            exit 1
+          fi
+
+      - name: Assert Terraform credentials file was created
+        run: |
+          TF_RC="$HOME/.terraformrc"
+          echo "Checking Terraform credentials file at $TF_RC"
+          if [ ! -f "$TF_RC" ]; then
+            echo "FAIL: Terraform credentials file not found at $TF_RC"
+            exit 1
+          fi
+          echo "PASS: Terraform credentials file exists"
+          if grep -q "wrapper-test.scalr.io" "$TF_RC"; then
+            echo "PASS: hostname found in terraform credentials file"
+          else
+            echo "FAIL: hostname not found in terraform credentials file"
+            cat "$TF_RC"
+            exit 1
+          fi

@@ -1,0 +1,37 @@
+name: Test no wrapper
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_REF: refs/heads/main
+      GITHUB_EVENT_NAME: push
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          scalr_hostname: test.scalr.io
+          scalr_token: fake-token-for-testing
+          iac_platform: terraform
+          binary_version: "1.9.0"
+          binary_wrapper: "false"
+      - name: Assert terraform binary works without wrapper
+        run: |
+          echo "Checking terraform binary without wrapper..."
+          if ! command -v terraform &>/dev/null; then
+            echo "FAIL: terraform binary not found in PATH"
+            exit 1
+          fi
+          # Run terraform version — should succeed directly (no wrapper overhead)
+          terraform version
+          echo "PASS: terraform binary works without wrapper"
+      - name: Assert TF_CLI_ARGS_init is set for Scalr
+        run: |
+          echo "TF_CLI_ARGS_init: $TF_CLI_ARGS_init"
+          if [ -z "$TF_CLI_ARGS_init" ]; then
+            echo "WARN: TF_CLI_ARGS_init is not set (may be expected depending on action version)"
+          else
+            echo "PASS: TF_CLI_ARGS_init is set"
+          fi

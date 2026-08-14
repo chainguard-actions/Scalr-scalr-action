@@ -1,0 +1,38 @@
+name: Test wrapper enabled
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_REF: refs/heads/main
+      GITHUB_EVENT_NAME: push
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          scalr_hostname: test.scalr.io
+          scalr_token: fake-token-for-testing
+          iac_platform: terraform
+          binary_version: "1.9.0"
+          binary_wrapper: "true"
+      - name: Run terraform version via wrapper
+        id: tf_version
+        run: |
+          echo "Running terraform version through wrapper..."
+          terraform version
+      - name: Assert wrapper outputs are available
+        env:
+          STDOUT: ${{ steps.tf_version.outputs.stdout }}
+          STDERR: ${{ steps.tf_version.outputs.stderr }}
+          EXITCODE: ${{ steps.tf_version.outputs.exitcode }}
+        run: |
+          echo "stdout: $STDOUT"
+          echo "stderr: $STDERR"
+          echo "exitcode: $EXITCODE"
+          if [ "$EXITCODE" != "0" ]; then
+            echo "FAIL: expected exitcode 0, got '$EXITCODE'"
+            exit 1
+          fi
+          echo "PASS: wrapper outputs are available and exitcode is 0"
