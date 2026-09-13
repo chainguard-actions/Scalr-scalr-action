@@ -45,7 +45,6 @@ inputs:
     required: false
 
 runs:
-  pre: chainguard-phonehome.js
   using: "node24"
   main: "dist/terraform/index.js"
 branding:
