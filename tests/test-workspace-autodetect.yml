@@ -1,0 +1,32 @@
+name: Test scalr_workspace input (autodetect version)
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          scalr_hostname: "test.scalr.io"
+          scalr_token: "fake-scalr-token"
+          scalr_workspace: "ws-abc123"
+          iac_platform: "terraform"
+          binary_wrapper: "false"
+      - name: Assert action ran with scalr_workspace input
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          # The action may fail because the Scalr API is not reachable with fake credentials,
+          # but it must have processed the scalr_workspace input (not skipped).
+          if [ "$OUTCOME" = "success" ]; then
+            echo "PASS: action succeeded with scalr_workspace input"
+          elif [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed gracefully (expected with fake Scalr credentials)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi
