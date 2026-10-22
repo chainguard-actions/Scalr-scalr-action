@@ -14,6 +14,7 @@ Hardened by [Chainguard](https://www.chainguard.dev) from the upstream action at
 | v1.7.0 | [`v1.7.0`](https://github.com/chainguard-actions/Scalr-scalr-action/tree/v1.7.0) | [`4da3049`](https://github.com/Scalr/scalr-action/commit/4da3049c377ee9359820f9c83e6ba3fc8e30a7ff) |
 | v1.7.1 | [`v1.7.1`](https://github.com/chainguard-actions/Scalr-scalr-action/tree/v1.7.1) | [`8b36bc5`](https://github.com/Scalr/scalr-action/commit/8b36bc5f8a181e792f3caae1039efbdbfdb62f05) |
 | v1.8.0 | [`v1.8.0`](https://github.com/chainguard-actions/Scalr-scalr-action/tree/v1.8.0) | [`3313260`](https://github.com/Scalr/scalr-action/commit/33132605fdcdd67e7cf8eaa0524fb7145c37e7b1) |
+| v1.9.0 | [`v1.9.0`](https://github.com/chainguard-actions/Scalr-scalr-action/tree/v1.9.0) | [`2c5e08d`](https://github.com/Scalr/scalr-action/commit/2c5e08df132a0ded66c97eb4708bcc4eac8fc240) |
 
 ## Privacy
 
