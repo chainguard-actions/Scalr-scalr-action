@@ -1,0 +1,38 @@
+name: Test wrapper exposes stdout/exitcode outputs
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          scalr_hostname: example.scalr.io
+          scalr_token: test-scalr-token-123
+          binary_version: 1.5.7
+          binary_wrapper: "true"
+      - name: Assert wrapper installed
+        run: |
+          which terraform-bin || { echo "FAIL: terraform-bin not on PATH"; exit 1; }
+          echo "PASS"
+      - id: tf
+        name: Run terraform through wrapper
+        run: terraform version
+      - name: Assert wrapper outputs
+        env:
+          STDOUT: ${{ steps.tf.outputs.stdout }}
+          EXITCODE: ${{ steps.tf.outputs.exitcode }}
+        run: |
+          echo "stdout: $STDOUT"
+          echo "exitcode: $EXITCODE"
+          if ! echo "$STDOUT" | grep -q "Terraform v1.5.7"; then
+            echo "FAIL: stdout does not contain version"
+            exit 1
+          fi
+          if [ "$EXITCODE" != "0" ]; then
+            echo "FAIL: expected exitcode 0"
+            exit 1
+          fi
+          echo "PASS"

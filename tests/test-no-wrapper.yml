@@ -1,0 +1,28 @@
+name: Test install without wrapper
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          scalr_hostname: example.scalr.io
+          scalr_token: test-scalr-token-123
+          binary_version: 1.5.7
+          binary_wrapper: "false"
+          terraform_wrapper: "false"
+      - name: Assert raw terraform binary installed, no wrapper
+        run: |
+          TF="$(which terraform)" || { echo "FAIL: terraform not on PATH"; exit 1; }
+          echo "terraform at: $TF"
+          if [ -e "$(dirname "$TF")/terraform-bin" ]; then
+            echo "FAIL: terraform-bin present though wrapper disabled"
+            exit 1
+          fi
+          OUT="$(terraform version)"
+          echo "$OUT"
+          echo "$OUT" | grep -q "Terraform v1.5.7" || { echo "FAIL: wrong version"; exit 1; }
+          echo "PASS"

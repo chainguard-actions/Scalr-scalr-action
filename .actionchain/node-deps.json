@@ -1,0 +1,13 @@
+{
+  "status": "self_contained",
+  "entries": [
+    {
+      "path": "dist/terraform/index.js",
+      "status": "self_contained"
+    },
+    {
+      "path": "dist/cleanup/index.js",
+      "status": "self_contained"
+    }
+  ]
+}

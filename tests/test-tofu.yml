@@ -1,0 +1,29 @@
+name: Test OpenTofu install
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          scalr_hostname: example.scalr.io
+          scalr_token: test-scalr-token-123
+          iac_platform: tofu
+          binary_version: 1.6.2
+      - name: Assert tofu installed
+        run: |
+          which tofu || { echo "FAIL: tofu not on PATH"; exit 1; }
+          OUT="$(tofu version)"
+          echo "$OUT"
+          echo "$OUT" | grep -q "OpenTofu v1.6.2" || { echo "FAIL: expected OpenTofu v1.6.2"; exit 1; }
+          echo "PASS"
+      - name: Assert tofurc written
+        run: |
+          RC="$HOME/.tofurc"
+          if [ -n "$TF_CLI_CONFIG_FILE" ]; then RC="$TF_CLI_CONFIG_FILE"; fi
+          [ -f "$RC" ] || { echo "FAIL: $RC missing"; exit 1; }
+          grep -q 'credentials "example.scalr.io"' "$RC" || { echo "FAIL: hostname missing"; exit 1; }
+          echo "PASS"

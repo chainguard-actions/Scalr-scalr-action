@@ -1,0 +1,48 @@
+name: Test basic terraform install with explicit version
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          scalr_hostname: example.scalr.io
+          scalr_token: test-scalr-token-123
+          binary_version: 1.5.7
+      - name: Assert terraform installed with correct version
+        run: |
+          which terraform || { echo "FAIL: terraform not on PATH"; exit 1; }
+          OUT="$(terraform version)"
+          echo "$OUT"
+          if ! echo "$OUT" | grep -q "Terraform v1.5.7"; then
+            echo "FAIL: expected Terraform v1.5.7"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert scalr CLI on PATH
+        run: |
+          which scalr || { echo "FAIL: scalr CLI not on PATH"; exit 1; }
+          echo "PASS"
+      - name: Assert credential files written
+        run: |
+          RC="$HOME/.terraformrc"
+          if [ -n "$TF_CLI_CONFIG_FILE" ]; then RC="$TF_CLI_CONFIG_FILE"; fi
+          echo "rc file: $RC"
+          [ -f "$RC" ] || { echo "FAIL: $RC missing"; exit 1; }
+          grep -q 'credentials "example.scalr.io"' "$RC" || { echo "FAIL: hostname missing in rc"; exit 1; }
+          grep -q 'token = "test-scalr-token-123"' "$RC" || { echo "FAIL: token missing in rc"; exit 1; }
+          CONF="$HOME/.scalr/scalr.conf"
+          [ -f "$CONF" ] || { echo "FAIL: $CONF missing"; exit 1; }
+          grep -q '"hostname":"example.scalr.io"' "$CONF" || { echo "FAIL: hostname missing in scalr.conf"; exit 1; }
+          grep -q '"token":"test-scalr-token-123"' "$CONF" || { echo "FAIL: token missing in scalr.conf"; exit 1; }
+          echo "PASS"
+      - name: Assert exported env vars
+        run: |
+          echo "TF_IN_AUTOMATION=$TF_IN_AUTOMATION TERRAFORM_OUTPUT=$TERRAFORM_OUTPUT PR_COMMENT=$PR_COMMENT"
+          [ "$TF_IN_AUTOMATION" = "TRUE" ] || { echo "FAIL: TF_IN_AUTOMATION"; exit 1; }
+          [ "$TERRAFORM_OUTPUT" = "false" ] || { echo "FAIL: TERRAFORM_OUTPUT"; exit 1; }
+          [ "$PR_COMMENT" = "false" ] || { echo "FAIL: PR_COMMENT"; exit 1; }
+          echo "PASS"
